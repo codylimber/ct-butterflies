@@ -106,6 +106,7 @@
   .status-earlylate { color: var(--text-faint); }
   .rarity-rare { color: #e74c3c; }
   .rarity-uncommon { color: #d4a017; }
+  .rarity-common { color: #27ae60; }
   .no-data { color: var(--text-faint); font-style: italic; padding: 20px; text-align: center; }
 
   /* Tooltip */
@@ -336,7 +337,8 @@
     tbody.innerHTML = rows.map(r => {
       const statusClass = r.status === "Peak" ? "status-peak" : r.status === "Active" ? "status-active" : "status-earlylate";
       const rarityIcon = r.rarity === "Rare" ? '<span class="rarity-rare">\u{1F534}</span> ' :
-                         r.rarity === "Uncommon" ? '<span class="rarity-uncommon">\u{1F7E1}</span> ' : '';
+                         r.rarity === "Uncommon" ? '<span class="rarity-uncommon">\u{1F7E1}</span> ' :
+                         '<span class="rarity-common">\u{1F7E2}</span> ';
       return `<tr>
         <td>${rarityIcon}<a href="${inatUrl(r.species)}" target="_blank">${r.common_name} <em>(${r.species})</em></a></td>
         <td class="${statusClass}">${r.status}</td>
@@ -462,7 +464,7 @@
     // Y-axis labels
     const heatmapLabelColor = getComputedStyle(document.documentElement).getPropertyValue("--heatmap-label").trim();
     filteredSpecies.forEach(sp => {
-      const icon = sp.rarity === "Rare" ? "\u{1F534} " : sp.rarity === "Uncommon" ? "\u{1F7E1} " : "";
+      const icon = sp.rarity === "Rare" ? "\u{1F534} " : sp.rarity === "Uncommon" ? "\u{1F7E1} " : "\u{1F7E2} ";
       const broodLabel = sp.brood_count > 1 ? ` [${sp.brood_count} flights]` : "";
 
       const label = g.append("a")
@@ -504,7 +506,7 @@
       .filter(s => !county || (wMap[s.species] && Object.keys(wMap[s.species]).length > 0))
       .sort((a, b) => a.peak_week - b.peak_week)
       .map(s => {
-        const rarityIcon = s.rarity === "Rare" ? "\u{1F534} " : s.rarity === "Uncommon" ? "\u{1F7E1} " : "";
+        const rarityIcon = s.rarity === "Rare" ? "\u{1F534} " : s.rarity === "Uncommon" ? "\u{1F7E1} " : "\u{1F7E2} ";
         const peak = formatDate(weekToDate(s.peak_week));
         const flight = `${formatDate(weekToDate(s.first_week))} \u2013 ${formatDate(weekToDate(s.last_week))}`;
         return `<tr>

@@ -6,90 +6,134 @@
 <title>Connecticut Butterfly Flight Periods</title>
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
 <style>
+  :root {
+    --bg: #fafafa; --bg-card: #fff; --text: #333; --text-muted: #666;
+    --text-faint: #999; --border: #e0e0e0; --border-light: #eee;
+    --link: #2a7ae2; --heading: #222; --tab-bg: #f0f0f0;
+    --input-bg: #fff; --input-border: #ccc; --input-text: #333;
+    --grid-line: #ccc; --grid-line-faint: #eee;
+    --heatmap-label: #333; --legend-text: #666;
+  }
+  [data-theme="dark"] {
+    --bg: #1a1a2e; --bg-card: #16213e; --text: #e0e0e0; --text-muted: #a0a0b0;
+    --text-faint: #707080; --border: #2a2a4a; --border-light: #2a2a4a;
+    --link: #5dade2; --heading: #f0f0f0; --tab-bg: #1a1a2e;
+    --input-bg: #16213e; --input-border: #3a3a5a; --input-text: #e0e0e0;
+    --grid-line: #3a3a5a; --grid-line-faint: #2a2a4a;
+    --heatmap-label: #d0d0e0; --legend-text: #a0a0b0;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #333; background: #fafafa; line-height: 1.5;
+    color: var(--text); background: var(--bg); line-height: 1.5;
     max-width: 1200px; margin: 0 auto; padding: 24px;
+    transition: background 0.3s, color 0.3s;
   }
   header { margin-bottom: 24px; display: flex; gap: 24px; align-items: flex-start; }
   .header-text { flex: 1; }
   .header-photo { flex-shrink: 0; }
   .header-photo img {
     width: 180px; height: 180px; object-fit: cover; border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border);
   }
   .header-photo .photo-credit {
-    font-size: 0.65rem; color: #999; text-align: center; margin-top: 4px;
+    font-size: 0.65rem; color: var(--text-faint); text-align: center; margin-top: 4px;
   }
-  .header-photo .photo-credit a { color: #999; text-decoration: none; }
+  .header-photo .photo-credit a { color: var(--text-faint); text-decoration: none; }
   .header-photo .photo-credit a:hover { text-decoration: underline; }
-  header h1 { font-size: 1.8rem; margin-bottom: 2px; letter-spacing: -0.02em; }
+  header h1 { font-size: 1.8rem; margin-bottom: 2px; letter-spacing: -0.02em; color: var(--heading); }
   header h1 span { color: #d35400; }
-  header .subtitle { color: #555; font-size: 0.95rem; margin-bottom: 10px; }
-  header .description { color: #666; font-size: 0.85rem; line-height: 1.6; max-width: 800px; }
-  header .description a { color: #2a7ae2; text-decoration: none; }
+  header .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 10px; }
+  header .description { color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; max-width: 800px; }
+  header .description a { color: var(--link); text-decoration: none; }
   header .description a:hover { text-decoration: underline; }
-  #meta-info { color: #999; font-size: 0.75rem; margin-top: 8px; }
+  #meta-info { color: var(--text-faint); font-size: 0.75rem; margin-top: 8px; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 200;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px;
+    background: var(--bg-card); cursor: pointer; font-size: 0.8rem;
+    color: var(--text-muted); transition: background 0.3s, border-color 0.3s;
+  }
+  .theme-toggle:hover { border-color: var(--text-muted); }
+
   .today-btn {
-    padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px;
-    background: #fff; cursor: pointer; font-size: 0.85rem; color: #555;
+    padding: 6px 14px; border: 1px solid var(--input-border); border-radius: 4px;
+    background: var(--input-bg); cursor: pointer; font-size: 0.85rem; color: var(--text-muted);
     align-self: flex-end;
   }
-  .today-btn:hover { background: #f0f0f0; }
+  .today-btn:hover { opacity: 0.8; }
   .filters {
     display: flex; gap: 16px; align-items: flex-end;
     flex-wrap: wrap; margin-bottom: 8px;
-    padding: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
   }
   .filter-group { display: flex; flex-direction: column; gap: 4px; }
-  .filter-group label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .filter-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
   .filter-group select, .filter-group input {
-    padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
-    font-size: 0.9rem;
+    padding: 6px 10px; border: 1px solid var(--input-border); border-radius: 4px;
+    font-size: 0.9rem; background: var(--input-bg); color: var(--input-text);
   }
-  .filter-note { font-size: 0.75rem; color: #888; margin-bottom: 20px; padding-left: 16px; }
+  .filter-note { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 20px; padding-left: 16px; }
 
   section { margin-bottom: 32px; }
-  section h2 { font-size: 1.2rem; margin-bottom: 12px; color: #222; }
+  section h2 { font-size: 1.2rem; margin-bottom: 12px; color: var(--heading); }
 
   /* Tabs */
   .tabs { display: flex; gap: 0; margin-bottom: 0; }
   .tab-btn {
-    padding: 8px 20px; border: 1px solid #ccc; border-bottom: none;
-    background: #f0f0f0; cursor: pointer; font-size: 0.85rem;
-    border-radius: 6px 6px 0 0; color: #555;
+    padding: 8px 20px; border: 1px solid var(--border); border-bottom: none;
+    background: var(--tab-bg); cursor: pointer; font-size: 0.85rem;
+    border-radius: 6px 6px 0 0; color: var(--text-muted);
   }
-  .tab-btn.active { background: #fff; color: #222; font-weight: 600; border-bottom: 1px solid #fff; margin-bottom: -1px; z-index: 1; }
+  .tab-btn.active { background: var(--bg-card); color: var(--heading); font-weight: 600; border-bottom: 1px solid var(--bg-card); margin-bottom: -1px; z-index: 1; }
 
   /* Heatmap container */
   #heatmap-container {
-    background: #fff; border: 1px solid #ccc; border-radius: 0 8px 8px 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 0 8px 8px 8px;
     padding: 16px; overflow-x: auto;
   }
 
   /* What's flying table */
   #flying-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  #flying-table th { text-align: left; padding: 6px 10px; border-bottom: 2px solid #ddd; font-size: 0.8rem; color: #555; }
-  #flying-table td { padding: 6px 10px; border-bottom: 1px solid #eee; }
-  #flying-table a { color: #2a7ae2; text-decoration: none; }
+  #flying-table th { text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--border); font-size: 0.8rem; color: var(--text-muted); }
+  #flying-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-light); }
+  #flying-table a { color: var(--link); text-decoration: none; }
   #flying-table a:hover { text-decoration: underline; }
-  .status-peak { color: #d35400; font-weight: 600; }
+  .status-peak { color: #e67e22; font-weight: 600; }
   .status-active { color: #27ae60; }
-  .status-earlylate { color: #888; }
+  .status-earlylate { color: var(--text-faint); }
   .rarity-rare { color: #e74c3c; }
   .rarity-uncommon { color: #d4a017; }
-  .no-data { color: #999; font-style: italic; padding: 20px; text-align: center; }
+  .no-data { color: var(--text-faint); font-style: italic; padding: 20px; text-align: center; }
 
   /* Tooltip */
   .heatmap-tooltip {
-    position: absolute; pointer-events: none; background: rgba(0,0,0,0.85);
+    position: absolute; pointer-events: none; background: rgba(0,0,0,0.9);
     color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 0.8rem;
     line-height: 1.4; white-space: pre-line; z-index: 100;
   }
 
   /* Summary table */
   #summary-section table { font-size: 0.85rem; }
+
+  /* DataTables dark mode overrides */
+  [data-theme="dark"] .dataTables_wrapper { color: var(--text); }
+  [data-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+  [data-theme="dark"] .dataTables_wrapper .dataTables_length select {
+    background: var(--input-bg); color: var(--input-text); border: 1px solid var(--input-border);
+  }
+  [data-theme="dark"] table.dataTable tbody tr { background: var(--bg-card); color: var(--text); }
+  [data-theme="dark"] table.dataTable tbody tr:hover { background: #1f2b47; }
+  [data-theme="dark"] table.dataTable thead th { color: var(--text-muted); border-bottom-color: var(--border); }
+  [data-theme="dark"] table.dataTable tbody td { border-bottom-color: var(--border-light); }
+  [data-theme="dark"] table.dataTable.display tbody tr.odd { background: var(--bg-card); }
+  [data-theme="dark"] table.dataTable.display tbody tr.even { background: #1a2540; }
+  [data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button { color: var(--text-muted) !important; }
+  [data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--border) !important; color: var(--heading) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .dataTables_wrapper .dataTables_info { color: var(--text-faint); }
+  [data-theme="dark"] table.dataTable a { color: var(--link); }
 
   /* Responsive */
   @media (max-width: 600px) {
@@ -101,6 +145,8 @@
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode">&#9790; Dark</button>
 
 <header>
   <div class="header-text">
@@ -176,6 +222,23 @@
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script>
 (async function() {
+  // --- Theme ---
+  let isDark = localStorage.getItem("theme") === "dark";
+  const themeBtn = document.getElementById("theme-toggle");
+
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "");
+    themeBtn.innerHTML = isDark ? "&#9788; Light" : "&#9790; Dark";
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }
+  applyTheme();
+
+  themeBtn.addEventListener("click", () => {
+    isDark = !isDark;
+    applyTheme();
+    renderHeatmap(); // re-render with new color scale
+  });
+
   // --- Load data ---
   const data = await fetch("phenology_data.json").then(r => r.json());
   const { metadata, species, weekly, county_weekly } = data;
@@ -200,7 +263,6 @@
   const speciesMap = {};
   species.forEach(s => { speciesMap[s.species] = s; });
 
-  // weekly data as nested map: species -> week -> {n, rel_abundance}
   function buildWeeklyMap(weeklyData) {
     const m = {};
     weeklyData.forEach(r => {
@@ -211,7 +273,6 @@
   }
   const statewideMap = buildWeeklyMap(weekly);
 
-  // county weekly: county -> species -> week -> {n, rel_abundance}
   const countyMap = {};
   county_weekly.forEach(r => {
     if (!countyMap[r.county]) countyMap[r.county] = {};
@@ -234,17 +295,13 @@
   const today = new Date();
   datePicker.value = today.toISOString().slice(0, 10);
 
-  // --- iNat link ---
   function inatUrl(sp) {
     return `https://www.inaturalist.org/observations?place_id=49&taxon_name=${encodeURIComponent(sp)}`;
   }
 
-  // --- Get active weekly map for current filter ---
   function getActiveMap() {
     const county = countyPicker.value;
-    if (county && countyMap[county]) {
-      return countyMap[county];
-    }
+    if (county && countyMap[county]) return countyMap[county];
     return statewideMap;
   }
 
@@ -278,7 +335,6 @@
     }
     tbody.innerHTML = rows.map(r => {
       const statusClass = r.status === "Peak" ? "status-peak" : r.status === "Active" ? "status-active" : "status-earlylate";
-
       const rarityIcon = r.rarity === "Rare" ? '<span class="rarity-rare">\u{1F534}</span> ' :
                          r.rarity === "Uncommon" ? '<span class="rarity-uncommon">\u{1F7E1}</span> ' : '';
       return `<tr>
@@ -295,21 +351,27 @@
   let currentTab = "all";
   const tooltip = document.getElementById("tooltip");
 
+  function getColorScale() {
+    // Dark mode: inferno (dark bg, bright colors for high abundance)
+    // Light mode: YlOrRd (light bg, warm colors for high abundance)
+    return isDark
+      ? d3.scaleSequential(d3.interpolateInferno).domain([0, 1])
+      : d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
+  }
+
   function renderHeatmap() {
     const container = document.getElementById("heatmap-container");
     container.innerHTML = "";
     const wMap = getActiveMap();
+    const colorScale = getColorScale();
 
-    // Filter species by tab
     let filteredSpecies = species.filter(s => {
-      // Only include species that have data in the active map
       if (!wMap[s.species]) return false;
       if (currentTab === "uncommon") return s.rarity === "Uncommon";
       if (currentTab === "rare") return s.rarity === "Rare";
       return true;
     });
 
-    // Sort by peak week
     filteredSpecies.sort((a, b) => a.peak_week - b.peak_week);
 
     if (filteredSpecies.length === 0) {
@@ -317,7 +379,6 @@
       return;
     }
 
-    // Dimensions
     const margin = { top: 40, right: 20, bottom: 30, left: 260 };
     const cellH = 18;
     const cellW = 16;
@@ -329,14 +390,11 @@
 
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Scales
     const xScale = d3.scaleLinear().domain([1, 52]).range([0, 51 * cellW]);
     const yScale = d3.scaleBand()
       .domain(filteredSpecies.map(s => s.species))
       .range([0, filteredSpecies.length * cellH])
       .padding(0.1);
-
-    const colorScale = d3.scaleSequential(d3.interpolateInferno).domain([0, 1]);
 
     // Month lines and labels
     const months = [
@@ -344,18 +402,21 @@
       {name:"May",wk:18},{name:"Jun",wk:23},{name:"Jul",wk:27},{name:"Aug",wk:31},
       {name:"Sep",wk:36},{name:"Oct",wk:40},{name:"Nov",wk:44},{name:"Dec",wk:49}
     ];
+    const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--grid-line").trim();
+    const labelColor = getComputedStyle(document.documentElement).getPropertyValue("--legend-text").trim();
+
     months.forEach(m => {
       g.append("line")
         .attr("x1", xScale(m.wk)).attr("x2", xScale(m.wk))
         .attr("y1", -5).attr("y2", filteredSpecies.length * cellH)
-        .attr("stroke", "#ccc").attr("stroke-width", 0.5);
+        .attr("stroke", gridColor).attr("stroke-width", 0.5);
       g.append("text")
         .attr("x", xScale(m.wk) + 15).attr("y", -10)
-        .attr("text-anchor", "middle").attr("font-size", "10px").attr("fill", "#666")
+        .attr("text-anchor", "middle").attr("font-size", "10px").attr("fill", labelColor)
         .text(m.name);
     });
 
-    // Selected week indicator (follows date picker)
+    // Selected week indicator
     const selectedDate = new Date(datePicker.value + "T12:00:00");
     const currentWeek = isoWeek(selectedDate);
     g.append("line")
@@ -369,7 +430,7 @@
         const entry = wMap[sp.species] && wMap[sp.species][w];
         const ra = entry ? entry.rel_abundance : 0;
         const n = entry ? entry.n : 0;
-        if (ra <= 0) continue; // skip empty cells for performance
+        if (ra <= 0) continue;
 
         g.append("rect")
           .attr("x", xScale(w) - cellW/2 + 0.5)
@@ -399,6 +460,7 @@
     });
 
     // Y-axis labels
+    const heatmapLabelColor = getComputedStyle(document.documentElement).getPropertyValue("--heatmap-label").trim();
     filteredSpecies.forEach(sp => {
       const icon = sp.rarity === "Rare" ? "\u{1F534} " : sp.rarity === "Uncommon" ? "\u{1F7E1} " : "";
       const broodLabel = sp.brood_count > 1 ? ` [${sp.brood_count} flights]` : "";
@@ -410,7 +472,7 @@
         .attr("x", -8)
         .attr("y", yScale(sp.species) + yScale.bandwidth() / 2)
         .attr("text-anchor", "end").attr("dominant-baseline", "central")
-        .attr("font-size", "10px").attr("fill", "#333")
+        .attr("font-size", "10px").attr("fill", heatmapLabelColor)
         .text(`${icon}${sp.common_name} (${sp.species})${broodLabel}`);
     });
 
@@ -418,17 +480,18 @@
     const legendW = 200, legendH = 10;
     const legend = svg.append("g").attr("transform", `translate(${margin.left}, ${height - 15})`);
     const defs = svg.append("defs");
-    const grad = defs.append("linearGradient").attr("id", "inferno-grad");
+    const gradId = "color-grad-" + Date.now();
+    const grad = defs.append("linearGradient").attr("id", gradId);
     for (let i = 0; i <= 10; i++) {
       grad.append("stop")
         .attr("offset", `${i * 10}%`)
         .attr("stop-color", colorScale(i / 10));
     }
     legend.append("rect").attr("width", legendW).attr("height", legendH)
-      .attr("fill", "url(#inferno-grad)").attr("rx", 2);
-    legend.append("text").attr("x", 0).attr("y", -3).attr("font-size", "9px").attr("fill", "#666").text("0%");
-    legend.append("text").attr("x", legendW).attr("y", -3).attr("text-anchor", "end").attr("font-size", "9px").attr("fill", "#666").text("100%");
-    legend.append("text").attr("x", legendW / 2).attr("y", -3).attr("text-anchor", "middle").attr("font-size", "9px").attr("fill", "#666").text("Relative abundance");
+      .attr("fill", `url(#${gradId})`).attr("rx", 2);
+    legend.append("text").attr("x", 0).attr("y", -3).attr("font-size", "9px").attr("fill", labelColor).text("0%");
+    legend.append("text").attr("x", legendW).attr("y", -3).attr("text-anchor", "end").attr("font-size", "9px").attr("fill", labelColor).text("100%");
+    legend.append("text").attr("x", legendW / 2).attr("y", -3).attr("text-anchor", "middle").attr("font-size", "9px").attr("fill", labelColor).text("Relative abundance");
   }
 
   // --- Summary table ---
@@ -455,7 +518,6 @@
         </tr>`;
       }).join("");
 
-    // (Re)init DataTables
     if ($.fn.DataTable.isDataTable("#summary-table")) {
       $("#summary-table").DataTable().destroy();
     }

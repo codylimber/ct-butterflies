@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecticut Butterfly Flight Periods</title>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #333; background: #fafafa; line-height: 1.5;
+    max-width: 1200px; margin: 0 auto; padding: 24px;
+  }
+  header { margin-bottom: 24px; }
+  header h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  header p { color: #666; font-size: 0.9rem; }
+  .filters {
+    display: flex; gap: 16px; align-items: flex-end;
+    flex-wrap: wrap; margin-bottom: 8px;
+    padding: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-group label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .filter-group select, .filter-group input {
+    padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .filter-note { font-size: 0.75rem; color: #888; margin-bottom: 20px; padding-left: 16px; }
+
+  section { margin-bottom: 32px; }
+  section h2 { font-size: 1.2rem; margin-bottom: 12px; color: #222; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 0; }
+  .tab-btn {
+    padding: 8px 20px; border: 1px solid #ccc; border-bottom: none;
+    background: #f0f0f0; cursor: pointer; font-size: 0.85rem;
+    border-radius: 6px 6px 0 0; color: #555;
+  }
+  .tab-btn.active { background: #fff; color: #222; font-weight: 600; border-bottom: 1px solid #fff; margin-bottom: -1px; z-index: 1; }
+
+  /* Heatmap container */
+  #heatmap-container {
+    background: #fff; border: 1px solid #ccc; border-radius: 0 8px 8px 8px;
+    padding: 16px; overflow-x: auto;
+  }
+
+  /* What's flying table */
+  #flying-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  #flying-table th { text-align: left; padding: 6px 10px; border-bottom: 2px solid #ddd; font-size: 0.8rem; color: #555; }
+  #flying-table td { padding: 6px 10px; border-bottom: 1px solid #eee; }
+  #flying-table a { color: #2a7ae2; text-decoration: none; }
+  #flying-table a:hover { text-decoration: underline; }
+  .status-peak { color: #d35400; font-weight: 600; }
+  .status-active { color: #27ae60; }
+  .status-earlylate { color: #888; }
+  .rarity-rare { color: #e74c3c; }
+  .rarity-uncommon { color: #d4a017; }
+  .no-data { color: #999; font-style: italic; padding: 20px; text-align: center; }
+
+  /* Tooltip */
+  .heatmap-tooltip {
+    position: absolute; pointer-events: none; background: rgba(0,0,0,0.85);
+    color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 0.8rem;
+    line-height: 1.4; white-space: pre-line; z-index: 100;
+  }
+
+  /* Summary table */
+  #summary-section table { font-size: 0.85rem; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .filters { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Connecticut Butterfly Flight Periods</h1>
+  <p id="meta-info">Loading data...</p>
+</header>
+
+<div class="filters">
+  <div class="filter-group">
+    <label for="county-picker">County</label>
+    <select id="county-picker"><option value="">All Connecticut</option></select>
+  </div>
+  <div class="filter-group">
+    <label for="date-picker">Date</label>
+    <input type="date" id="date-picker">
+  </div>
+</div>
+<div class="filter-note">Location-hidden observations may not appear for county-level filtering.</div>
+
+<section id="flying-section">
+  <h2 id="flying-title">What's Flying This Week?</h2>
+  <table id="flying-table">
+    <thead><tr>
+      <th>Species</th><th>Status</th><th>Rel. Abundance</th><th>Rarity</th><th>Broods</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section id="heatmap-section">
+  <h2>Flight Period Calendar</h2>
+  <div class="tabs">
+    <button class="tab-btn active" data-filter="all">All Species</button>
+    <button class="tab-btn" data-filter="uncommon">Uncommon</button>
+    <button class="tab-btn" data-filter="rare">Rare</button>
+  </div>
+  <div id="heatmap-container"></div>
+</section>
+
+<section id="summary-section">
+  <h2>Species Summary</h2>
+  <table id="summary-table" class="display" style="width:100%">
+    <thead><tr>
+      <th>Species</th><th>Common Name</th><th>Obs</th><th>Rarity</th>
+      <th>Broods</th><th>Peak Week</th><th>Flight Period</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<div class="heatmap-tooltip" id="tooltip" style="display:none"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script>
+(async function() {
+  // --- Load data ---
+  const data = await fetch("phenology_data.json").then(r => r.json());
+  const { metadata, species, weekly, county_weekly } = data;
+
+  // --- Week-to-date helper ---
+  function weekToDate(w) {
+    const d = new Date(2024, 0, 1);
+    d.setDate(d.getDate() + (w - 1) * 7);
+    return d;
+  }
+  function formatDate(d) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  function isoWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  // --- Build lookup maps ---
+  const speciesMap = {};
+  species.forEach(s => { speciesMap[s.species] = s; });
+
+  // weekly data as nested map: species -> week -> {n, rel_abundance}
+  function buildWeeklyMap(weeklyData) {
+    const m = {};
+    weeklyData.forEach(r => {
+      if (!m[r.species]) m[r.species] = {};
+      m[r.species][r.week] = { n: r.n, rel_abundance: r.rel_abundance };
+    });
+    return m;
+  }
+  const statewideMap = buildWeeklyMap(weekly);
+
+  // county weekly: county -> species -> week -> {n, rel_abundance}
+  const countyMap = {};
+  county_weekly.forEach(r => {
+    if (!countyMap[r.county]) countyMap[r.county] = {};
+    if (!countyMap[r.county][r.species]) countyMap[r.county][r.species] = {};
+    countyMap[r.county][r.species][r.week] = { n: r.n, rel_abundance: r.rel_abundance };
+  });
+
+  // --- Populate UI ---
+  document.getElementById("meta-info").textContent =
+    `iNaturalist research-grade observations, ${metadata.date_range} | ${metadata.species_count} species | ${metadata.total_observations.toLocaleString()} observations | Updated ${metadata.last_updated}`;
+
+  const countyPicker = document.getElementById("county-picker");
+  metadata.counties.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    countyPicker.appendChild(opt);
+  });
+
+  const datePicker = document.getElementById("date-picker");
+  const today = new Date();
+  datePicker.value = today.toISOString().slice(0, 10);
+
+  // --- iNat link ---
+  function inatUrl(sp) {
+    return `https://www.inaturalist.org/observations?place_id=49&taxon_name=${encodeURIComponent(sp)}`;
+  }
+
+  // --- Get active weekly map for current filter ---
+  function getActiveMap() {
+    const county = countyPicker.value;
+    if (county && countyMap[county]) {
+      return countyMap[county];
+    }
+    return statewideMap;
+  }
+
+  // --- What's Flying ---
+  function renderFlying() {
+    const dateVal = datePicker.value;
+    const d = new Date(dateVal + "T12:00:00");
+    const wk = isoWeek(d);
+    const wMap = getActiveMap();
+
+    document.getElementById("flying-title").textContent =
+      `What's Flying the Week of ${formatDate(d)}?`;
+
+    const rows = [];
+    species.forEach(s => {
+      const entry = wMap[s.species] && wMap[s.species][wk];
+      if (entry && entry.rel_abundance > 0) {
+        let status;
+        if (entry.rel_abundance >= 0.75) status = "Peak";
+        else if (entry.rel_abundance >= 0.25) status = "Active";
+        else status = "Early/Late";
+        rows.push({ ...s, ...entry, status });
+      }
+    });
+    rows.sort((a, b) => b.rel_abundance - a.rel_abundance);
+
+    const tbody = document.querySelector("#flying-table tbody");
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="no-data">No species active this week${countyPicker.value ? " in " + countyPicker.value : ""}.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const statusClass = r.status === "Peak" ? "status-peak" : r.status === "Active" ? "status-active" : "status-earlylate";
+      const rarityIcon = r.rarity === "Rare" ? '<span class="rarity-rare">\u{1F534}</span> ' :
+                         r.rarity === "Uncommon" ? '<span class="rarity-uncommon">\u{1F7E1}</span> ' : '';
+      return `<tr>
+        <td>${rarityIcon}<a href="${inatUrl(r.species)}" target="_blank">${r.common_name} <em>(${r.species})</em></a></td>
+        <td class="${statusClass}">${r.status}</td>
+        <td>${Math.round(r.rel_abundance * 100)}%</td>
+        <td>${r.rarity}</td>
+        <td>${r.brood_count > 1 ? r.brood_count : "1"}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // --- Heatmap ---
+  let currentTab = "all";
+  const tooltip = document.getElementById("tooltip");
+
+  function renderHeatmap() {
+    const container = document.getElementById("heatmap-container");
+    container.innerHTML = "";
+    const wMap = getActiveMap();
+
+    // Filter species by tab
+    let filteredSpecies = species.filter(s => {
+      // Only include species that have data in the active map
+      if (!wMap[s.species]) return false;
+      if (currentTab === "uncommon") return s.rarity === "Uncommon";
+      if (currentTab === "rare") return s.rarity === "Rare";
+      return true;
+    });
+
+    // Sort by peak week
+    filteredSpecies.sort((a, b) => a.peak_week - b.peak_week);
+
+    if (filteredSpecies.length === 0) {
+      container.innerHTML = `<div class="no-data">No ${currentTab} species found${countyPicker.value ? " in " + countyPicker.value : ""}.</div>`;
+      return;
+    }
+
+    // Dimensions
+    const margin = { top: 40, right: 20, bottom: 30, left: 260 };
+    const cellH = 18;
+    const cellW = 16;
+    const width = margin.left + 52 * cellW + margin.right;
+    const height = margin.top + filteredSpecies.length * cellH + margin.bottom;
+
+    const svg = d3.select(container).append("svg")
+      .attr("width", width).attr("height", height);
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Scales
+    const xScale = d3.scaleLinear().domain([1, 52]).range([0, 51 * cellW]);
+    const yScale = d3.scaleBand()
+      .domain(filteredSpecies.map(s => s.species))
+      .range([0, filteredSpecies.length * cellH])
+      .padding(0.1);
+
+    const colorScale = d3.scaleSequential(d3.interpolateInferno).domain([0, 1]);
+
+    // Month lines and labels
+    const months = [
+      {name:"Jan",wk:1},{name:"Feb",wk:5},{name:"Mar",wk:10},{name:"Apr",wk:14},
+      {name:"May",wk:18},{name:"Jun",wk:23},{name:"Jul",wk:27},{name:"Aug",wk:31},
+      {name:"Sep",wk:36},{name:"Oct",wk:40},{name:"Nov",wk:44},{name:"Dec",wk:49}
+    ];
+    months.forEach(m => {
+      g.append("line")
+        .attr("x1", xScale(m.wk)).attr("x2", xScale(m.wk))
+        .attr("y1", -5).attr("y2", filteredSpecies.length * cellH)
+        .attr("stroke", "#ccc").attr("stroke-width", 0.5);
+      g.append("text")
+        .attr("x", xScale(m.wk) + 15).attr("y", -10)
+        .attr("text-anchor", "middle").attr("font-size", "10px").attr("fill", "#666")
+        .text(m.name);
+    });
+
+    // Current week indicator
+    const currentWeek = isoWeek(new Date());
+    g.append("line")
+      .attr("x1", xScale(currentWeek)).attr("x2", xScale(currentWeek))
+      .attr("y1", -5).attr("y2", filteredSpecies.length * cellH)
+      .attr("stroke", "#e74c3c").attr("stroke-width", 1.5).attr("stroke-dasharray", "4,2");
+
+    // Cells
+    filteredSpecies.forEach(sp => {
+      for (let w = 1; w <= 52; w++) {
+        const entry = wMap[sp.species] && wMap[sp.species][w];
+        const ra = entry ? entry.rel_abundance : 0;
+        const n = entry ? entry.n : 0;
+        if (ra <= 0) continue; // skip empty cells for performance
+
+        g.append("rect")
+          .attr("x", xScale(w) - cellW/2 + 0.5)
+          .attr("y", yScale(sp.species))
+          .attr("width", cellW - 1)
+          .attr("height", yScale.bandwidth())
+          .attr("fill", colorScale(ra))
+          .attr("rx", 1)
+          .on("mouseenter", function(event) {
+            tooltip.style.display = "block";
+            tooltip.innerHTML =
+              `<strong>${sp.common_name}</strong> (<em>${sp.species}</em>)\n` +
+              `Week of ${formatDate(weekToDate(w))}\n` +
+              `Observations: ${n}\n` +
+              `Relative abundance: ${Math.round(ra * 100)}%\n` +
+              `Rarity: ${sp.rarity}` +
+              (sp.brood_count > 1 ? `\nBroods: ${sp.brood_count}` : "");
+          })
+          .on("mousemove", function(event) {
+            tooltip.style.left = (event.pageX + 12) + "px";
+            tooltip.style.top = (event.pageY - 10) + "px";
+          })
+          .on("mouseleave", function() {
+            tooltip.style.display = "none";
+          });
+      }
+    });
+
+    // Y-axis labels
+    filteredSpecies.forEach(sp => {
+      const icon = sp.rarity === "Rare" ? "\u{1F534} " : sp.rarity === "Uncommon" ? "\u{1F7E1} " : "";
+      const broodLabel = sp.brood_count > 1 ? ` [${sp.brood_count} broods]` : "";
+
+      const label = g.append("a")
+        .attr("href", inatUrl(sp.species)).attr("target", "_blank");
+
+      label.append("text")
+        .attr("x", -8)
+        .attr("y", yScale(sp.species) + yScale.bandwidth() / 2)
+        .attr("text-anchor", "end").attr("dominant-baseline", "central")
+        .attr("font-size", "10px").attr("fill", "#333")
+        .text(`${icon}${sp.common_name} (${sp.species})${broodLabel}`);
+    });
+
+    // Color legend
+    const legendW = 200, legendH = 10;
+    const legend = svg.append("g").attr("transform", `translate(${margin.left}, ${height - 15})`);
+    const defs = svg.append("defs");
+    const grad = defs.append("linearGradient").attr("id", "inferno-grad");
+    for (let i = 0; i <= 10; i++) {
+      grad.append("stop")
+        .attr("offset", `${i * 10}%`)
+        .attr("stop-color", colorScale(i / 10));
+    }
+    legend.append("rect").attr("width", legendW).attr("height", legendH)
+      .attr("fill", "url(#inferno-grad)").attr("rx", 2);
+    legend.append("text").attr("x", 0).attr("y", -3).attr("font-size", "9px").attr("fill", "#666").text("0%");
+    legend.append("text").attr("x", legendW).attr("y", -3).attr("text-anchor", "end").attr("font-size", "9px").attr("fill", "#666").text("100%");
+    legend.append("text").attr("x", legendW / 2).attr("y", -3).attr("text-anchor", "middle").attr("font-size", "9px").attr("fill", "#666").text("Relative abundance");
+  }
+
+  // --- Summary table ---
+  function renderSummaryTable() {
+    const county = countyPicker.value;
+    const wMap = getActiveMap();
+
+    const tbody = document.querySelector("#summary-table tbody");
+    tbody.innerHTML = species
+      .filter(s => !county || (wMap[s.species] && Object.keys(wMap[s.species]).length > 0))
+      .sort((a, b) => a.peak_week - b.peak_week)
+      .map(s => {
+        const rarityIcon = s.rarity === "Rare" ? "\u{1F534} " : s.rarity === "Uncommon" ? "\u{1F7E1} " : "";
+        const peak = formatDate(weekToDate(s.peak_week));
+        const flight = `${formatDate(weekToDate(s.first_week))} \u2013 ${formatDate(weekToDate(s.last_week))}`;
+        return `<tr>
+          <td><a href="${inatUrl(s.species)}" target="_blank">${s.species}</a></td>
+          <td>${s.common_name}</td>
+          <td>${s.total_obs}</td>
+          <td>${rarityIcon}${s.rarity}</td>
+          <td>${s.brood_count}</td>
+          <td>${peak}</td>
+          <td>${flight}</td>
+        </tr>`;
+      }).join("");
+
+    // (Re)init DataTables
+    if ($.fn.DataTable.isDataTable("#summary-table")) {
+      $("#summary-table").DataTable().destroy();
+    }
+    $("#summary-table").DataTable({
+      pageLength: 20,
+      order: [[5, "asc"]],
+      language: { search: "Search:" }
+    });
+  }
+
+  // --- Wire up events ---
+  function refresh() {
+    renderFlying();
+    renderHeatmap();
+    renderSummaryTable();
+  }
+
+  countyPicker.addEventListener("change", refresh);
+  datePicker.addEventListener("change", () => { renderFlying(); });
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentTab = btn.dataset.filter;
+      renderHeatmap();
+    });
+  });
+
+  // --- Initial render ---
+  refresh();
+})();
+</script>
+</body>
+</html>

@@ -13,8 +13,19 @@
     max-width: 1200px; margin: 0 auto; padding: 24px;
   }
   header { margin-bottom: 24px; }
-  header h1 { font-size: 1.6rem; margin-bottom: 4px; }
-  header p { color: #666; font-size: 0.9rem; }
+  header h1 { font-size: 1.8rem; margin-bottom: 2px; letter-spacing: -0.02em; }
+  header h1 span { color: #d35400; }
+  header .subtitle { color: #555; font-size: 0.95rem; margin-bottom: 10px; }
+  header .description { color: #666; font-size: 0.85rem; line-height: 1.6; max-width: 800px; }
+  header .description a { color: #2a7ae2; text-decoration: none; }
+  header .description a:hover { text-decoration: underline; }
+  #meta-info { color: #999; font-size: 0.75rem; margin-top: 8px; }
+  .today-btn {
+    padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; cursor: pointer; font-size: 0.85rem; color: #555;
+    align-self: flex-end;
+  }
+  .today-btn:hover { background: #f0f0f0; }
   .filters {
     display: flex; gap: 16px; align-items: flex-end;
     flex-wrap: wrap; margin-bottom: 8px;
@@ -79,7 +90,16 @@
 <body>
 
 <header>
-  <h1>Connecticut Butterfly Flight Periods</h1>
+  <h1>Connecticut <span>Butterfly</span> Flight Periods</h1>
+  <p class="subtitle">When and where to find butterflies across the state</p>
+  <p class="description">
+    This interactive guide shows when each butterfly species is active in Connecticut,
+    based on community observations from <a href="https://www.inaturalist.org/" target="_blank">iNaturalist</a>.
+    Use the date picker to see what's flying any week of the year, or browse the
+    flight period calendar to plan your outings. Click on any species name to view
+    its iNaturalist observations in Connecticut &mdash; a great way to find out where
+    to look. Filter by county to see what's been spotted near you.
+  </p>
   <p id="meta-info">Loading data...</p>
 </header>
 
@@ -92,6 +112,7 @@
     <label for="date-picker">Date</label>
     <input type="date" id="date-picker">
   </div>
+  <button class="today-btn" id="today-btn">Today</button>
 </div>
 <div class="filter-note">Location-hidden observations may not appear for county-level filtering.</div>
 
@@ -430,6 +451,10 @@
 
   countyPicker.addEventListener("change", refresh);
   datePicker.addEventListener("change", () => { renderFlying(); });
+  document.getElementById("today-btn").addEventListener("click", () => {
+    datePicker.value = new Date().toISOString().slice(0, 10);
+    renderFlying();
+  });
 
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {

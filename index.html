@@ -12,7 +12,18 @@
     color: #333; background: #fafafa; line-height: 1.5;
     max-width: 1200px; margin: 0 auto; padding: 24px;
   }
-  header { margin-bottom: 24px; }
+  header { margin-bottom: 24px; display: flex; gap: 24px; align-items: flex-start; }
+  .header-text { flex: 1; }
+  .header-photo { flex-shrink: 0; }
+  .header-photo img {
+    width: 180px; height: 180px; object-fit: cover; border-radius: 12px;
+    border: 2px solid #e0e0e0;
+  }
+  .header-photo .photo-credit {
+    font-size: 0.65rem; color: #999; text-align: center; margin-top: 4px;
+  }
+  .header-photo .photo-credit a { color: #999; text-decoration: none; }
+  .header-photo .photo-credit a:hover { text-decoration: underline; }
   header h1 { font-size: 1.8rem; margin-bottom: 2px; letter-spacing: -0.02em; }
   header h1 span { color: #d35400; }
   header .subtitle { color: #555; font-size: 0.95rem; margin-bottom: 10px; }
@@ -83,6 +94,8 @@
   /* Responsive */
   @media (max-width: 600px) {
     body { padding: 12px; }
+    header { flex-direction: column; }
+    .header-photo { align-self: center; }
     .filters { flex-direction: column; }
   }
 </style>
@@ -90,17 +103,26 @@
 <body>
 
 <header>
-  <h1>Connecticut <span>Butterfly</span> Flight Periods</h1>
-  <p class="subtitle">When and where to find butterflies across the state</p>
-  <p class="description">
-    This interactive guide shows when each butterfly species is active in Connecticut,
-    based on community observations from <a href="https://www.inaturalist.org/" target="_blank">iNaturalist</a>.
-    Use the date picker to see what's flying any week of the year, or browse the
-    flight period calendar to plan your outings. Click on any species name to view
-    its iNaturalist observations in Connecticut &mdash; a great way to find out where
-    to look. Filter by county to see what's been spotted near you.
-  </p>
-  <p id="meta-info">Loading data...</p>
+  <div class="header-text">
+    <h1>Connecticut <span>Butterfly</span> Flight Periods</h1>
+    <p class="subtitle">When and where to find butterflies across the state</p>
+    <p class="description">
+      This interactive guide shows when each butterfly species is active in Connecticut,
+      based on community observations from <a href="https://www.inaturalist.org/" target="_blank">iNaturalist</a>.
+      Use the date picker to see what's flying any week of the year, or browse the
+      flight period calendar to plan your outings. Click on any species name to view
+      its iNaturalist observations in Connecticut &mdash; a great way to find out where
+      to look. Filter by county to see what's been spotted near you.
+    </p>
+    <p id="meta-info">Loading data...</p>
+  </div>
+  <div class="header-photo">
+    <a href="https://www.inaturalist.org/observations/171568983" target="_blank">
+      <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/297730250/medium.jpg"
+           alt="Northern Metalmark butterfly">
+    </a>
+    <p class="photo-credit">Northern Metalmark &mdash; <a href="https://www.inaturalist.org/observations/171568983" target="_blank">&copy; Cody Limber</a> (CC BY-NC)</p>
+  </div>
 </header>
 
 <div class="filters">

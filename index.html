@@ -142,7 +142,7 @@
   <h2 id="flying-title">What's Flying This Week?</h2>
   <table id="flying-table">
     <thead><tr>
-      <th>Species</th><th>Status</th><th>Rel. Abundance</th><th>Rarity</th><th>Broods</th>
+      <th>Species</th><th>Status</th><th>Rel. Abundance</th><th>Rarity</th><th>Flights</th>
     </tr></thead>
     <tbody></tbody>
   </table>
@@ -163,7 +163,7 @@
   <table id="summary-table" class="display" style="width:100%">
     <thead><tr>
       <th>Species</th><th>Common Name</th><th>Obs</th><th>Rarity</th>
-      <th>Broods</th><th>Peak Week</th><th>Flight Period</th>
+      <th>Flights</th><th>Peak Week</th><th>Flight Period</th>
     </tr></thead>
     <tbody></tbody>
   </table>
@@ -265,7 +265,7 @@
         let status;
         if (entry.rel_abundance >= 0.75) status = "Peak";
         else if (entry.rel_abundance >= 0.25) status = "Active";
-        else status = "Early/Late";
+        else status = wk <= s.peak_week ? "Early" : "Late";
         rows.push({ ...s, ...entry, status });
       }
     });
@@ -278,6 +278,7 @@
     }
     tbody.innerHTML = rows.map(r => {
       const statusClass = r.status === "Peak" ? "status-peak" : r.status === "Active" ? "status-active" : "status-earlylate";
+
       const rarityIcon = r.rarity === "Rare" ? '<span class="rarity-rare">\u{1F534}</span> ' :
                          r.rarity === "Uncommon" ? '<span class="rarity-uncommon">\u{1F7E1}</span> ' : '';
       return `<tr>
@@ -384,7 +385,7 @@
               `Observations: ${n}\n` +
               `Relative abundance: ${Math.round(ra * 100)}%\n` +
               `Rarity: ${sp.rarity}` +
-              (sp.brood_count > 1 ? `\nBroods: ${sp.brood_count}` : "");
+              (sp.brood_count > 1 ? `\nFlights: ${sp.brood_count}` : "");
           })
           .on("mousemove", function(event) {
             tooltip.style.left = (event.pageX + 12) + "px";
@@ -399,7 +400,7 @@
     // Y-axis labels
     filteredSpecies.forEach(sp => {
       const icon = sp.rarity === "Rare" ? "\u{1F534} " : sp.rarity === "Uncommon" ? "\u{1F7E1} " : "";
-      const broodLabel = sp.brood_count > 1 ? ` [${sp.brood_count} broods]` : "";
+      const broodLabel = sp.brood_count > 1 ? ` [${sp.brood_count} flights]` : "";
 
       const label = g.append("a")
         .attr("href", inatUrl(sp.species)).attr("target", "_blank");

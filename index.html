@@ -355,8 +355,9 @@
         .text(m.name);
     });
 
-    // Current week indicator
-    const currentWeek = isoWeek(new Date());
+    // Selected week indicator (follows date picker)
+    const selectedDate = new Date(datePicker.value + "T12:00:00");
+    const currentWeek = isoWeek(selectedDate);
     g.append("line")
       .attr("x1", xScale(currentWeek)).attr("x2", xScale(currentWeek))
       .attr("y1", -5).attr("y2", filteredSpecies.length * cellH)
@@ -473,10 +474,11 @@
   }
 
   countyPicker.addEventListener("change", refresh);
-  datePicker.addEventListener("change", () => { renderFlying(); });
+  datePicker.addEventListener("change", () => { renderFlying(); renderHeatmap(); });
   document.getElementById("today-btn").addEventListener("click", () => {
     datePicker.value = new Date().toISOString().slice(0, 10);
     renderFlying();
+    renderHeatmap();
   });
 
   document.querySelectorAll(".tab-btn").forEach(btn => {

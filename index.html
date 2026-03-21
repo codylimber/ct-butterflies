@@ -215,6 +215,7 @@
       Sort:
       <button class="sort-btn active" data-sort="date">By date</button>
       <button class="sort-btn" data-sort="obs">By abundance</button>
+      <button class="sort-btn" data-sort="taxonomy">By taxonomy</button>
     </div>
   </div>
   <div id="heatmap-container"></div>
@@ -258,6 +259,35 @@
   // --- Load data ---
   const data = await fetch("phenology_data.json").then(r => r.json());
   const { metadata, species, weekly, county_weekly } = data;
+
+  // --- Fetch taxonomy for taxonomic sorting ---
+  const taxonomyMap = {};
+  async function fetchTaxonomy() {
+    const taxonIds = species.map(s => s.taxon_id).filter(Boolean);
+    const batchSize = 30;
+    for (let i = 0; i < taxonIds.length; i += batchSize) {
+      const batch = taxonIds.slice(i, i + batchSize);
+      try {
+        const resp = await fetch(`https://api.inaturalist.org/v1/taxa/${batch.join(",")}`);
+        const json = await resp.json();
+        (json.results || []).forEach(t => {
+          const sp = species.find(s => s.taxon_id === t.id);
+          if (!sp) return;
+          const ancestors = t.ancestors || [];
+          const family = ancestors.find(a => a.rank === "family");
+          const superfamily = ancestors.find(a => a.rank === "superfamily");
+          taxonomyMap[sp.species] = {
+            superfamily: superfamily ? superfamily.name : "Unknown",
+            family: family ? family.name : "Unknown",
+            genus: sp.species.split(" ")[0]
+          };
+        });
+      } catch (e) {
+        console.warn("Taxonomy fetch failed for batch", i, e);
+      }
+    }
+  }
+  const taxonomyReady = fetchTaxonomy();
 
   // --- Week-to-date helper ---
   function weekToDate(w) {
@@ -391,7 +421,16 @@
       return true;
     });
 
-    if (currentSort === "obs") {
+    if (currentSort === "taxonomy") {
+      filteredSpecies.sort((a, b) => {
+        const ta = taxonomyMap[a.species] || { superfamily: "ZZZ", family: "ZZZ", genus: a.species };
+        const tb = taxonomyMap[b.species] || { superfamily: "ZZZ", family: "ZZZ", genus: b.species };
+        return ta.superfamily.localeCompare(tb.superfamily)
+          || ta.family.localeCompare(tb.family)
+          || ta.genus.localeCompare(tb.genus)
+          || a.species.localeCompare(b.species);
+      });
+    } else if (currentSort === "obs") {
       filteredSpecies.sort((a, b) => b.total_obs - a.total_obs);
     } else {
       filteredSpecies.sort((a, b) => a.peak_week - b.peak_week);
@@ -576,10 +615,11 @@
   });
 
   document.querySelectorAll(".sort-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentSort = btn.dataset.sort;
+      if (currentSort === "taxonomy") await taxonomyReady;
       renderHeatmap();
     });
   });
